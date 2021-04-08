@@ -6,42 +6,33 @@
 
 #include "GenTL.h"
 
+#include "LibLoader.hpp"
 
-class Logger
+
+static void log(GenTL::GC_ERROR err, std::string oper)
 {
-public:
-	Logger(HMODULE gentl)
+	size_t err_size = 100;
+	char* err_ch = new char[err_size];
+
+	auto log_error = GCGetLastError(&err, err_ch, &err_size);
+
+	if (log_error != 0)
 	{
-		GCGetLastError = (GenTL::PGCGetLastError)GetProcAddress(gentl, "GCGetLastError");
-		assert(GCGetLastError != nullptr);
-	}
+		std::cout << "Logging error! Error descriptor: " << log_error << std::endl;
 
-	void operator()(GenTL::GC_ERROR err, std::string oper)
-	{
-		size_t err_size = 30;
-		char* err_ch = new char[err_size];
-
-		auto log_error = GCGetLastError(&err, err_ch, &err_size);
-
-		if (log_error != 0)
-		{
-			std::cout << "Logging error! Error descriptor: " << log_error << std::endl;
-
-			delete[] err_ch;
-			return;
-		}
-
-		std::cout << "log -> Operation " << oper << ". Status: " << err_ch << std::endl;
 		delete[] err_ch;
-
-		if (err != 0)
-		{
-			system("pause");
-			exit(-1);
-		}
+		return;
 	}
 
-private:
-	GenTL::PGCGetLastError GCGetLastError;
+	std::cout << "log -> Operation " << oper << ". Status: " << err_ch << std::endl;
+	delete[] err_ch;
 
-};
+	if (err != 0)
+	{
+		std::cout << "Error code: " << err << std::endl;
+		//system("pause");
+		//exit(-1);
+	}
+}
+
+

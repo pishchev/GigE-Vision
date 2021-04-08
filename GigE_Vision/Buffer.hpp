@@ -9,7 +9,7 @@ public:
 	}
 	~Buffer()
 	{
-		delete[] buffer;
+		//delete[] buffer;
 	}
 
 	size_t size;

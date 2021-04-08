@@ -144,6 +144,7 @@
   <ItemGroup>
     <ClInclude Include="Buffer.hpp" />
     <ClInclude Include="GenTL.h" />
+    <ClInclude Include="LibLoader.hpp" />
     <ClInclude Include="Logger.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

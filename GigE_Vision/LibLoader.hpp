@@ -1,0 +1,87 @@
+#pragma once
+#include "GenTL.h"
+#include <string>
+
+static HMODULE gentl;
+
+static GenTL::PGCGetLastError GCGetLastError;
+
+static GenTL::PGCInitLib GCInitLib;
+static GenTL::PGCCloseLib GCCloseLib;
+static GenTL::PGCGetInfo GCGetInfo;
+static GenTL::PTLOpen TLOpen;
+static GenTL::PTLClose TLClose;
+static GenTL::PTLUpdateInterfaceList TLUpdateInterfaceList;
+static GenTL::PTLGetInfo TLGetInfo;
+static GenTL::PTLGetNumInterfaces TLGetNumInterfaces;
+static GenTL::PTLGetInterfaceID TLGetInterfaceID;
+static GenTL::PTLOpenInterface TLOpenInterface;
+static GenTL::PIFUpdateDeviceList IFUpdateDeviceList;
+static GenTL::PIFGetNumDevices IFGetNumDevices;
+static GenTL::PIFGetDeviceID IFGetDeviceID;
+static GenTL::PIFOpenDevice IFOpenDevice;
+static GenTL::PDevGetNumDataStreams DevGetNumDataStreams;
+static GenTL::PDevGetDataStreamID DevGetDataStreamID;
+static GenTL::PDevOpenDataStream DevOpenDataStream;
+
+static void Init_Lib(std::string module_)
+{
+	gentl = LoadLibraryA(module_.data());
+	assert(gentl != nullptr);
+
+	GCGetLastError = (GenTL::PGCGetLastError)GetProcAddress(gentl, "GCGetLastError");
+	assert(GCGetLastError != nullptr);
+
+	GCInitLib = (GenTL::PGCInitLib)GetProcAddress(gentl, "GCInitLib");
+	assert(GCInitLib != nullptr);
+
+	GCCloseLib = (GenTL::PGCCloseLib)GetProcAddress(gentl, "GCCloseLib");
+	assert(GCCloseLib != nullptr);
+
+	GCGetInfo = (GenTL::PGCGetInfo)GetProcAddress(gentl, "GCGetInfo");
+	assert(GCGetInfo != nullptr);
+
+	TLOpen = (GenTL::PTLOpen)GetProcAddress(gentl, "TLOpen");
+	assert(TLOpen != nullptr);
+
+	TLClose = (GenTL::PTLClose)GetProcAddress(gentl, "TLClose");
+	assert(TLClose != nullptr);
+
+	TLUpdateInterfaceList = (GenTL::PTLUpdateInterfaceList)GetProcAddress(gentl, "TLUpdateInterfaceList");
+	assert(TLUpdateInterfaceList != nullptr);
+
+	TLGetInfo = (GenTL::PTLGetInfo)GetProcAddress(gentl, "TLGetInfo");
+	assert(TLGetInfo != nullptr);
+
+	TLGetNumInterfaces = (GenTL::PTLGetNumInterfaces)GetProcAddress(gentl, "TLGetNumInterfaces");
+	assert(TLGetNumInterfaces != nullptr);
+
+	TLGetInterfaceID = (GenTL::PTLGetInterfaceID)GetProcAddress(gentl, "TLGetInterfaceID");
+	assert(TLGetInterfaceID != nullptr);
+
+	TLOpenInterface = (GenTL::PTLOpenInterface)GetProcAddress(gentl, "TLOpenInterface");
+	assert(TLOpenInterface != nullptr);
+
+	IFUpdateDeviceList = (GenTL::PIFUpdateDeviceList)GetProcAddress(gentl, "IFUpdateDeviceList");
+	assert(IFUpdateDeviceList != nullptr);
+
+	IFGetNumDevices = (GenTL::PIFGetNumDevices)GetProcAddress(gentl, "IFGetNumDevices");
+	assert(IFGetNumDevices != nullptr);
+
+	IFGetDeviceID = (GenTL::PIFGetDeviceID)GetProcAddress(gentl, "IFGetDeviceID");
+	assert(IFGetDeviceID != nullptr);
+
+	IFOpenDevice = (GenTL::PIFOpenDevice)GetProcAddress(gentl, "IFOpenDevice");
+	assert(IFOpenDevice != nullptr);
+
+	DevGetNumDataStreams = (GenTL::PDevGetNumDataStreams)GetProcAddress(gentl, "DevGetNumDataStreams");
+	assert(DevGetNumDataStreams != nullptr);
+
+	DevGetDataStreamID = (GenTL::PDevGetDataStreamID)GetProcAddress(gentl, "DevGetDataStreamID");
+	assert(DevGetDataStreamID != nullptr);
+
+	DevOpenDataStream = (GenTL::PDevOpenDataStream)GetProcAddress(gentl, "DevOpenDataStream");
+	assert(DevOpenDataStream != nullptr);
+
+
+}
