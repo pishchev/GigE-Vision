@@ -1,4 +1,5 @@
 #pragma once
+#include <typeinfo>
 
 class Buffer
 {
@@ -17,8 +18,21 @@ public:
 
 };
 
-template<typename T>
+
+template<typename T , class = typename std::enable_if<std::is_same<T,char>::value> ::type>
 void print_as(const Buffer& buffer)
 {
 	std::cout << (T*)buffer.buffer << std::endl;
+}
+
+template<typename T, class = typename std::enable_if<!std::is_same<T, char>::value>::type , int = 0>
+void print_as(const Buffer& buffer)
+{
+	std::cout << *((T*)buffer.buffer) << std::endl;
+}
+
+template<typename T>
+T read_as(const Buffer& buffer)
+{
+	return *((T*)buffer.buffer);
 }

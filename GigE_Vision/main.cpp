@@ -5,194 +5,186 @@
 #include <stdio.h> 
 
 #include <string>
+#include <vector>
 
 #include "Buffer.hpp"
 #include "Logger.hpp"
 #include "LibLoader.hpp"
 
+#include "TL_Handler.hpp"
+#include "IF_Handler.hpp"
+#include "DEV_Handler.hpp"
+
 #include "GenTL.h"
 
-// TLSimu.cti
-// bgapi2_gige.cti
+#include <thread>
 
-class TL_Handler
+void Introduce_Lib()
 {
-public:
+	Buffer info_buffer(10);
+	int a = 1;
+	elog(GCGetInfo(1, &a, info_buffer.buffer, &info_buffer.size), 
+		"GCGetInfo");
+	
+	std::cout << "Library producer: ";
+	print_as<char>(info_buffer);
+}
 
-	void Open()
+
+void ArqFunction(GenTL::EVENT_HANDLE hEvent)
+{
+	Buffer data_buffer(10000);
+	while (true)
 	{
-		auto err = TLOpen(&hTL);
-
-		if (log_flag)
-			log(err, "TL_Handler::Open");
-	}
-
-	void UpdateInterfaceList()
-	{
-		bool8_t pbChanged = false;
-		auto err = TLUpdateInterfaceList(hTL, &pbChanged, GENTL_INFINITE);
-
-		if (log_flag)
-			log(err, "TL_Handler::UpdateInterfaceList");
-	}
-
-	uint32_t GetNumInterfaces()
-	{
-		auto err = TLGetNumInterfaces(hTL, &num_interfaces);
-
-		if (log_flag)
-			log(err, "TL_Handler::GetNumInterfaces");
-
-		return num_interfaces;
-	}
-
-	void ShowInterfaces()
-	{
-		GetNumInterfaces();
-
-		std::cout << "Inferfaces: " << std::endl;
-
-		for (uint32_t i = 0; i < num_interfaces; i++)
+		auto err = EventGetData(hEvent, data_buffer.buffer, &data_buffer.size, 1000);
+		if ( err == 0)
 		{
-			Buffer sID(20);
-			auto err = TLGetInterfaceID(hTL, i, (char*)sID.buffer, &sID.size);
-
-			std::cout << i << ") ";
-			print_as<char>(sID);
-
-			if (log_flag)
-				log(err, "TL_Handler::ShowInterfaces");
+			std::cout << "GOT IT!";
+		}
+		else if (err != GenTL::GC_ERR_TIMEOUT)
+		{
+			elog(err, "ArqFunction");
 		}
 	}
+}
 
-	GenTL::IF_HANDLE GetInterface(uint32_t num)
-	{
-		if (num > num_interfaces)
-			return nullptr;
-
-		Buffer sID(20);
-		TLGetInterfaceID(hTL, num, (char*)sID.buffer, &sID.size);
-
-		GenTL::IF_HANDLE hIF = nullptr;
-
-		auto err = TLOpenInterface(hTL, (char*)sID.buffer, &hIF);
-
-		if (log_flag)
-			log(err, "TL_Handler::GetInterface");
-	
-		return hIF;
-	}
-
-
-private:
-	bool log_flag = true;
-
-	GenTL::TL_HANDLE hTL = nullptr;
-
-	uint32_t num_interfaces = -1;
-};
 
 int main()
 {
+	// TLSimu.cti
+	// bgapi2_gige.cti
 	Init_Lib("TLSimu.cti");	
 	
-
 	GCInitLib();
 
-	bool8_t pbChanged = false;
-
-	{
-		Buffer info_buffer(10);
-		int a = 1;
-		log(GCGetInfo(1, &a, info_buffer.buffer, &info_buffer.size),
-			"GCGetInfo");
-		print_as<char>(info_buffer);
-	}
-	
-
-	//GenTL::TL_HANDLE hTL = nullptr;
-
-	//log(TLOpen(&hTL),
-	//	"TLOpen");
-
-
-	//log(TLUpdateInterfaceList(hTL , &pbChanged, GENTL_INFINITE),
-	//	"TLUpdateInterfaceList") ;
-
-
-	//uint32_t num_interface = -1;
-	//log(TLGetNumInterfaces(hTL, &num_interface),
-	//	"TLGetNumInterfaces");
-	//std::cout << "Number of interfaces: " << num_interface << std::endl;
-
-	////проверка на существование интерфейсов
-
-	//Buffer sID(20);
-	//log(TLGetInterfaceID(hTL, 0, (char*)sID.buffer, &sID.size),
-	//	"TLGetInterfaceID");
-	//print_as<char>(sID);
-
-
-	//GenTL::IF_HANDLE hIF;
-
-	//log(TLOpenInterface(hTL , (char*)sID.buffer , &hIF),
-	//	"TLOpenInterface");
+	Introduce_Lib();
 
 	TL_Handler tl_handler;
 	tl_handler.Open();
 	tl_handler.UpdateInterfaceList();
 	tl_handler.ShowInterfaces();
 
-	GenTL::IF_HANDLE hIF = tl_handler.GetInterface(0);
+	IF_Handler if_handler(tl_handler.GetInterface(0));
+	if_handler.UpdateDeviceList();
+	if_handler.ShowDevices();
 
-	log(IFUpdateDeviceList(hIF, &pbChanged, GENTL_INFINITE),
-		"IFUpdateDeviceList");
+	DEV_Handler dev_handler(if_handler.GetDevice(0));
+	dev_handler.ShowStreams();
 
+	GenTL::DS_HANDLE hDS = dev_handler.GetStream(0);
 
-	uint32_t num_device = -1;
-	log(IFGetNumDevices(hIF, &num_device),
-		"IFGetNumDevices");
-	std::cout << "Number of diveces: " << num_device << std::endl;
+	//-------------------------------------------------------------
 
-	//проверка на существование девайсов
+	//Работает, но не знаю, зачем это
 
-	Buffer dID(20);
-	log(IFGetDeviceID(hIF, 1, (char*)dID.buffer, &dID.size),
-		"IFGetDeviceID");
-	print_as<char>(dID);
+	{
+		GenTL::PORT_HANDLE port = dev_handler.GetPort();
 
+		uint32_t num_urls = -1;
 
-	GenTL::DEV_HANDLE hDevice;
+		elog(GCGetNumPortURLs(port, &num_urls), "GCGetNumPortURLs");
+		std::cout << "Num urls: " << num_urls << std::endl;
 
-	log(IFOpenDevice(hIF, (char*)dID.buffer, GenTL::DEVICE_ACCESS_READONLY, &hDevice),
-		"IFOpenDevice");
+		Buffer info(40);
+		int32_t iInfoCmd = GenTL::INFO_DATATYPE_STRING;
+		elog(GCGetPortURLInfo(port, 0, GenTL::URL_INFO_FILE_REGISTER_ADDRESS, &iInfoCmd, info.buffer, &info.size), "GCGetPortURLInfo");
 
+		uint64_t addres = read_as<uint64_t>(info);
+		std::cout << "Adress: " << addres << std::endl;
 
+		Buffer info2(40);
+		int32_t iInfoCmd2 = GenTL::INFO_DATATYPE_STRING;
 
-	uint32_t num_stream = -1;
-	log(DevGetNumDataStreams(hDevice, &num_stream),
-		"DevGetNumDataStreams");
+		elog(GCGetPortURLInfo(port, 0, GenTL::URL_INFO_FILE_SIZE, &iInfoCmd2, info2.buffer, &info2.size), "GCGetPortURLInfo");
 
-	std::cout << "Number of streams: " << num_stream << std::endl;
+		std::cout << "Filesize: ";
+		print_as<uint64_t>(info2);
 
-	//проверка на существование stream
+		Buffer read_port_buffer(read_as<uint64_t>(info2));
+		elog(GCReadPort(port, addres, read_port_buffer.buffer, &read_port_buffer.size), "GCReadPort");
+		print_as<char>(read_port_buffer); //вывод XML
+	}
+	
 
+	//----------------------------------------------------------------------
 
-	Buffer dDSID(20);
-	log(DevGetDataStreamID(hDevice, 0, (char*)dDSID.buffer, &dDSID.size),
-		"DevGetDataStreamID");
-	print_as<char>(dDSID);
+	//не появляется данных,
 
+	GenTL::EVENT_HANDLE hEvent = nullptr;
+	elog(GCRegisterEvent(hDS, GenTL::EVENT_NEW_BUFFER, &hEvent), "GCRegisterEvent");
 
+	std::thread thr(ArqFunction,  std::ref(hEvent));
+	thr.detach();
 
-	GenTL::DS_HANDLE hDS;
+	//--------------------------------------------------------------------------
+	
+	int type = GenTL::INFO_DATATYPE_STRING;
+	Buffer pay_load_size(100);
+	elog(DSGetInfo(hDS, GenTL::STREAM_INFO_DEFINES_PAYLOADSIZE, &type, pay_load_size.buffer, &pay_load_size.size), "DSGetInfo");
+	std::cout << "Does payloadsize defines: ";
+	print_as<bool8_t>(pay_load_size);
 
-	log(DevOpenDataStream(hDevice, (char*)dDSID.buffer, &hDS),
-		"DevOpenDataStream");
+	std::vector<Buffer> buf_reserv = { Buffer(10000),Buffer(10000) ,Buffer(10000) ,Buffer(10000) ,Buffer(10000) };
 
+	std::vector<GenTL::BUFFER_HANDLE> ds_buffers = { nullptr ,nullptr ,nullptr ,nullptr ,nullptr };
+
+	/*for (int i = 0; i < ds_buffers.size(); ++i)
+	{
+		elog(DSAnnounceBuffer(hDS, buf_reserv[i].buffer, buf_reserv[i].size,  nullptr, &ds_buffers[i]), "DSAllocAndAnnounceBuffer");
+	}*/
 
 	
-	GCCloseLib();
+	for (auto it = ds_buffers.begin(); it != ds_buffers.end(); ++it)
+	{
+		elog(DSAllocAndAnnounceBuffer(hDS, 1000, nullptr, &(*it)), "DSAllocAndAnnounceBuffer");
+	}
+	
+	for (auto it = ds_buffers.begin(); it != ds_buffers.end(); ++it)
+	{
+		elog(DSQueueBuffer(hDS, *it), "DSQueueBuffer");
+	}
+
+	{Buffer info(30);
+	elog(DSGetInfo(hDS, GenTL::STREAM_INFO_NUM_STARTED, &type, info.buffer, &info.size), "DSGetInfo");
+	print_as<uint64_t>(info); }
+
+	elog(DSStartAcquisition(hDS , GenTL::ACQ_START_FLAGS_DEFAULT, GENTL_INFINITE ), "DSStartAcquisition");
+
+	{Buffer info(30);
+	elog(DSGetInfo(hDS, GenTL::STREAM_INFO_IS_GRABBING, &type, info.buffer, &info.size), "DSGetInfo");
+	print_as<bool8_t>(info); }
+	
+	
+
+	//GenTL::EVENT_HANDLE hEvent = nullptr;
+	//elog(GCRegisterEvent(hDS, GenTL::EVENT_NEW_BUFFER, &hEvent), "GCRegisterEvent");
+
+	/*std::thread thr(ArqFunction, hEvent);
+	thr.detach();*/
+
+
+
+	/*GenTL::BUFFER_HANDLE hBuffer = nullptr;
+	Buffer h_buffer(1000);
+
+
+	elog(DSAnnounceBuffer(hDS, h_buffer.buffer, h_buffer.size , nullptr, &hBuffer), "DSAnnounceBuffer");
+
+	int32_t type = GenTL::INFO_DATATYPE_BUFFER;
+	Buffer buffer_info(100);
+
+	elog(DSGetBufferInfo(hDS, hBuffer, GenTL::BUFFER_INFO_PAYLOADTYPE, &type, buffer_info.buffer, &buffer_info.size), "DSGetBufferInfo");
+
+	print_as<int32_t>(buffer_info);
+
+	int32_t buffer_type = *((int32_t*)info2.buffer);
+	std::cout << "Buffer_type: " << buffer_type << "    "<< type<< std::endl;*/
+
+
+
+
+
+	//GCCloseLib();
 
 	system("pause");
 	return 0;

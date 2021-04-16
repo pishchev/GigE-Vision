@@ -1,5 +1,6 @@
 #pragma once
 #include "GenTL.h"
+
 #include <string>
 
 static HMODULE gentl;
@@ -9,6 +10,7 @@ static GenTL::PGCGetLastError GCGetLastError;
 static GenTL::PGCInitLib GCInitLib;
 static GenTL::PGCCloseLib GCCloseLib;
 static GenTL::PGCGetInfo GCGetInfo;
+
 static GenTL::PTLOpen TLOpen;
 static GenTL::PTLClose TLClose;
 static GenTL::PTLUpdateInterfaceList TLUpdateInterfaceList;
@@ -16,13 +18,33 @@ static GenTL::PTLGetInfo TLGetInfo;
 static GenTL::PTLGetNumInterfaces TLGetNumInterfaces;
 static GenTL::PTLGetInterfaceID TLGetInterfaceID;
 static GenTL::PTLOpenInterface TLOpenInterface;
+
 static GenTL::PIFUpdateDeviceList IFUpdateDeviceList;
 static GenTL::PIFGetNumDevices IFGetNumDevices;
 static GenTL::PIFGetDeviceID IFGetDeviceID;
 static GenTL::PIFOpenDevice IFOpenDevice;
+
 static GenTL::PDevGetNumDataStreams DevGetNumDataStreams;
 static GenTL::PDevGetDataStreamID DevGetDataStreamID;
 static GenTL::PDevOpenDataStream DevOpenDataStream;
+static GenTL::PDevGetPort DevGetPort;
+
+static GenTL::PGCGetNumPortURLs GCGetNumPortURLs;
+static GenTL::PGCGetPortURLInfo GCGetPortURLInfo;
+static GenTL::PGCReadPort GCReadPort;
+static GenTL::PGCRegisterEvent GCRegisterEvent;
+
+static GenTL::PEventGetData EventGetData;
+
+static GenTL::PDSGetBufferInfo DSGetBufferInfo;
+static GenTL::PDSAnnounceBuffer DSAnnounceBuffer;
+
+static GenTL::PDSGetInfo DSGetInfo;
+static GenTL::PDSAllocAndAnnounceBuffer DSAllocAndAnnounceBuffer;
+
+static GenTL::PDSStartAcquisition DSStartAcquisition;
+
+static GenTL::PDSQueueBuffer DSQueueBuffer;
 
 static void Init_Lib(std::string module_)
 {
@@ -83,5 +105,39 @@ static void Init_Lib(std::string module_)
 	DevOpenDataStream = (GenTL::PDevOpenDataStream)GetProcAddress(gentl, "DevOpenDataStream");
 	assert(DevOpenDataStream != nullptr);
 
+	DevGetPort = (GenTL::PDevGetPort)GetProcAddress(gentl, "DevGetPort");
+	assert(DevGetPort != nullptr);
 
+	GCGetNumPortURLs = (GenTL::PGCGetNumPortURLs)GetProcAddress(gentl, "GCGetNumPortURLs");
+	assert(GCGetNumPortURLs != nullptr);
+	
+	GCGetPortURLInfo = (GenTL::PGCGetPortURLInfo)GetProcAddress(gentl, "GCGetPortURLInfo");
+	assert(GCGetPortURLInfo != nullptr);
+
+	GCReadPort = (GenTL::PGCReadPort)GetProcAddress(gentl, "GCReadPort");
+	assert(GCReadPort != nullptr);
+
+	GCRegisterEvent = (GenTL::PGCRegisterEvent)GetProcAddress(gentl, "GCRegisterEvent");
+	assert(GCRegisterEvent != nullptr);
+
+	EventGetData = (GenTL::PEventGetData)GetProcAddress(gentl, "EventGetData");
+	assert(EventGetData != nullptr);
+
+	DSGetBufferInfo = (GenTL::PDSGetBufferInfo)GetProcAddress(gentl, "DSGetBufferInfo");
+	assert(DSGetBufferInfo != nullptr);
+
+	DSAnnounceBuffer = (GenTL::PDSAnnounceBuffer)GetProcAddress(gentl, "DSAnnounceBuffer");
+	assert(DSAnnounceBuffer != nullptr);
+
+	DSGetInfo = (GenTL::PDSGetInfo)GetProcAddress(gentl, "DSGetInfo");
+	assert(DSGetInfo != nullptr);
+
+	DSAllocAndAnnounceBuffer = (GenTL::PDSAllocAndAnnounceBuffer)GetProcAddress(gentl, "DSAllocAndAnnounceBuffer");
+	assert(DSAllocAndAnnounceBuffer != nullptr);
+
+	DSStartAcquisition = (GenTL::PDSStartAcquisition)GetProcAddress(gentl, "DSStartAcquisition");
+	assert(DSStartAcquisition != nullptr);
+
+	DSQueueBuffer = (GenTL::PDSQueueBuffer)GetProcAddress(gentl, "DSQueueBuffer");
+	assert(DSQueueBuffer != nullptr);
 }

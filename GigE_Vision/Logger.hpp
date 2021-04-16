@@ -11,7 +11,7 @@
 
 static void log(GenTL::GC_ERROR err, std::string oper)
 {
-	size_t err_size = 100;
+	size_t err_size = 1000;
 	char* err_ch = new char[err_size];
 
 	auto log_error = GCGetLastError(&err, err_ch, &err_size);
@@ -30,9 +30,15 @@ static void log(GenTL::GC_ERROR err, std::string oper)
 	if (err != 0)
 	{
 		std::cout << "Error code: " << err << std::endl;
-		//system("pause");
-		//exit(-1);
+		system("pause");
+		exit(-1);
 	}
+}
+
+static void elog(GenTL::GC_ERROR err, std::string oper)
+{
+	if (err != 0)
+		log(err, oper);
 }
 
 
