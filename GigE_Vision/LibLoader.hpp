@@ -32,6 +32,7 @@ static GenTL::PDevGetPort DevGetPort;
 static GenTL::PGCGetNumPortURLs GCGetNumPortURLs;
 static GenTL::PGCGetPortURLInfo GCGetPortURLInfo;
 static GenTL::PGCReadPort GCReadPort;
+static GenTL::PGCWritePort GCWritePort;
 static GenTL::PGCRegisterEvent GCRegisterEvent;
 
 static GenTL::PEventGetData EventGetData;
@@ -42,9 +43,13 @@ static GenTL::PDSAnnounceBuffer DSAnnounceBuffer;
 static GenTL::PDSGetInfo DSGetInfo;
 static GenTL::PDSAllocAndAnnounceBuffer DSAllocAndAnnounceBuffer;
 
+static GenTL::PGCGetPortInfo GCGetPortInfo;
+
 static GenTL::PDSStartAcquisition DSStartAcquisition;
 
 static GenTL::PDSQueueBuffer DSQueueBuffer;
+
+
 
 static void Init_Lib(std::string module_)
 {
@@ -140,4 +145,10 @@ static void Init_Lib(std::string module_)
 
 	DSQueueBuffer = (GenTL::PDSQueueBuffer)GetProcAddress(gentl, "DSQueueBuffer");
 	assert(DSQueueBuffer != nullptr);
+
+	GCWritePort = (GenTL::PGCWritePort)GetProcAddress(gentl, "GCWritePort");
+	assert(GCWritePort != nullptr);
+
+	GCGetPortInfo = (GenTL::PGCGetPortInfo)GetProcAddress(gentl, "GCGetPortInfo");
+	assert(GCGetPortInfo != nullptr);
 }

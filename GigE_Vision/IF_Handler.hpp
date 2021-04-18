@@ -43,7 +43,7 @@ public:
 		auto err = IFGetDeviceID(hIF, num, (char*)dID.buffer, &dID.size);
 		elog(err, "IF_Handler::GetDevice");
 		GenTL::DEV_HANDLE hDevice = nullptr;
-		err = IFOpenDevice(hIF, (char*)dID.buffer, GenTL::DEVICE_ACCESS_READONLY, &hDevice);
+		err = IFOpenDevice(hIF, (char*)dID.buffer, GenTL::DEVICE_ACCESS_EXCLUSIVE, &hDevice);
 		elog(err, "IF_Handler::GetDevice");
 		return hDevice;
 	}
