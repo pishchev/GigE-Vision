@@ -16,8 +16,9 @@
 #include "IF_Handler.hpp"
 #include "DEV_Handler.hpp"
 
-#include "GenTL.h"
+#include "Camera.hpp"
 
+#include "GenTL.h"
 #include "GenICam.h"
 
 
@@ -37,15 +38,15 @@ void Introduce_Lib()
 
 void ArqFunction(GenTL::EVENT_HANDLE hEvent)
 {
-	Buffer data_buffer(10000);
+	Buffer data_buffer(16);
 	while (true)
 	{
-		auto err = EventGetData(hEvent, data_buffer.buffer, &data_buffer.size, GENTL_INFINITE);
+		auto err = EventGetData(hEvent, data_buffer.buffer, &data_buffer.size, 10000);
 		if (err == 0)
 		{
 			std::cout << "DataSize: " << data_buffer.size<<std::endl;
-			//std::cout << "Data: "; print_as<char>(data_buffer);
-			std::cout << "GOT IT!";
+			std::cout << "Data: "; print_as<uint32_t>(data_buffer);
+			data_buffer = Buffer(16);
 		}
 		else if (err != GenTL::GC_ERR_TIMEOUT)
 		{
@@ -78,48 +79,28 @@ int main()
 
 	GenTL::DS_HANDLE hDS = dev_handler.GetStream(0);
 
-	//-------------------------------------------------------------
+	//-----------------Trying to use GenApi-------------------------------------------------
 
-	//Требуется для дальнейшей подкачки XML файла!
+	Port p;
+	p.UsePort(dev_handler.GetPort());
 
-	GenTL::PORT_HANDLE port = dev_handler.GetPort();
+	Camera camera;
+	camera.LoadXML(Port::GetXML(dev_handler.GetPort()));
+	camera.Connect((IPort*)&p);
+	camera.SetWidthMin();
+	camera.SetHeightMin();
 
-	uint32_t num_urls = -1;
+	auto payloadSize = camera.PayloadSize();
 
-	elog(GCGetNumPortURLs(port, &num_urls), "GCGetNumPortURLs");
-	std::cout << "Num urls: " << num_urls << std::endl;
+	std::cout << "PayloadSize: " << payloadSize << std::endl;
+	std::cout << "PixelFormat: " << camera.PixelFormat() << std::endl;
 
-	Buffer info(40);
-	int32_t iInfoCmd = GenTL::INFO_DATATYPE_STRING;
-	elog(GCGetPortURLInfo(port, 0, GenTL::URL_INFO_FILE_REGISTER_ADDRESS, &iInfoCmd, info.buffer, &info.size), "GCGetPortURLInfo");
-
-	uint64_t addres = read_as<uint64_t>(info);
-	std::cout << "Adress: " << addres << std::endl;
-
-	Buffer info2(40);
-	int32_t iInfoCmd2 = GenTL::INFO_DATATYPE_STRING;
-
-	elog(GCGetPortURLInfo(port, 0, GenTL::URL_INFO_FILE_SIZE, &iInfoCmd2, info2.buffer, &info2.size), "GCGetPortURLInfo");
-
-	std::cout << "Filesize: ";
-	print_as<uint64_t>(info2);
-
-	Buffer read_port_buffer(read_as<uint64_t>(info2));
-	elog(GCReadPort(port, addres, read_port_buffer.buffer, &read_port_buffer.size), "GCReadPort");
-	//print_as<char>(read_port_buffer); //вывод XML
-
-	//--------------------------------------------------------------------------
+	//-----------------------Buffer preparing--------------------------------------
 
 	int type = GenTL::INFO_DATATYPE_STRING;
-	Buffer pay_load_size(100);
-	elog(DSGetInfo(hDS, GenTL::STREAM_INFO_DEFINES_PAYLOADSIZE, &type, pay_load_size.buffer, &pay_load_size.size), "DSGetInfo");
-	std::cout << "Does payloadsize defines: ";
-	print_as<bool8_t>(pay_load_size);
+	std::vector<Buffer> buf_reserv = { Buffer(payloadSize),Buffer(payloadSize) ,Buffer(payloadSize) ,Buffer(payloadSize) ,Buffer(payloadSize) };
 
-	std::vector<Buffer> buf_reserv = { Buffer(10000),Buffer(10000) ,Buffer(10000) ,Buffer(10000) ,Buffer(10000) };
-
-	std::vector<GenTL::BUFFER_HANDLE> ds_buffers = { nullptr ,nullptr ,nullptr ,nullptr ,nullptr };
-
+	std::vector<GenTL::BUFFER_HANDLE> ds_buffers = { nullptr ,nullptr ,nullptr ,nullptr ,nullptr};
 
 	/*for (int i = 0; i < ds_buffers.size(); ++i)
 	{
@@ -128,7 +109,7 @@ int main()
 	// or
 	for (auto it = ds_buffers.begin(); it != ds_buffers.end(); ++it)
 	{
-		elog(DSAllocAndAnnounceBuffer(hDS, 1000, nullptr, &(*it)), "DSAllocAndAnnounceBuffer");
+		elog(DSAllocAndAnnounceBuffer(hDS, payloadSize, nullptr, &(*it)), "DSAllocAndAnnounceBuffer");
 	}
 
 	for (auto it = ds_buffers.begin(); it != ds_buffers.end(); ++it)
@@ -138,6 +119,9 @@ int main()
 
 	elog(DSStartAcquisition(hDS, GenTL::ACQ_START_FLAGS_DEFAULT, GENTL_INFINITE), "DSStartAcquisition");
 
+	//-----------------StartAcquisition---------------------------------------------------
+
+	camera.StartAcquisition();
 
 	//----------------DataCapture----------------------------------------------------------
 
@@ -147,28 +131,23 @@ int main()
 	std::thread thr(ArqFunction, hEvent);
 	thr.detach();
 
-	//-----------------Trying to use GenApi-------------------------------------------------
+	//----------------------Chunks------------------------------------------------------------
 
-	using namespace GENAPI_NAMESPACE;
-	using namespace GENICAM_NAMESPACE;
+	//Buffer buffer_payload(100);
+	//while (true)
+	//{
+	//	for (auto it = ds_buffers.begin(); it != ds_buffers.end(); ++it)
+	//	{		
+	//		elog(DSGetBufferInfo(hDS, *it, GenTL::BUFFER_INFO_PAYLOADTYPE, &type, buffer_payload.buffer, &buffer_payload.size) ,"DSGetBufferInfo");
+	//		print_as<size_t>(buffer_payload);// == GenTL::PAYLOAD_TYPE_CHUNK_DATA)
+	//		buffer_payload = Buffer(100);
+	//		/*{
+	//			buffer_payload = Buffer(100);
+	//			std::cout << "!";
+	//		}*/
+	//	}
+	//}
 
-	CNodeMapRef Camera;
-
-	gcstring xml_str((char*)read_port_buffer.buffer);
-
-	Camera._LoadXMLFromString(xml_str);
-	Port p;
-	p.UsePort(dev_handler.GetPort());
-	Camera._Connect((IPort*)&p);
-
-	CCommandPtr ptrAcquisitionStart = Camera._GetNode("AcquisitionStart");
-	if (IsWritable(ptrAcquisitionStart))
-	{
-		ptrAcquisitionStart->Execute();
-		std::cout << "AcquisitionStart:" << ptrAcquisitionStart->IsDone() << std::endl;
-	}
-
-	//GCCloseLib();
 
 	system("pause");
 	return 0;

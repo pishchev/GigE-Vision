@@ -58,4 +58,27 @@ GENICAM_INTERFACE GENAPI_DECL_ABSTRACT Port : public GENAPI_NAMESPACE::IPort
 		if (read_as<bool8_t>(ni))return GENAPI_NAMESPACE::EAccessMode::NI;
 	}
 
+	static GENICAM_NAMESPACE::gcstring GetXML(GenTL::PORT_HANDLE port)
+	{
+		uint32_t num_urls = -1;
+
+		elog(GCGetNumPortURLs(port, &num_urls), "GCGetNumPortURLs");
+
+		Buffer info(40);
+		int32_t iInfoCmd = GenTL::INFO_DATATYPE_STRING;
+		elog(GCGetPortURLInfo(port, 0, GenTL::URL_INFO_FILE_REGISTER_ADDRESS, &iInfoCmd, info.buffer, &info.size), "GCGetPortURLInfo");
+
+		uint64_t addres = read_as<uint64_t>(info);
+
+		Buffer info2(40);
+		int32_t iInfoCmd2 = GenTL::INFO_DATATYPE_STRING;
+
+		elog(GCGetPortURLInfo(port, 0, GenTL::URL_INFO_FILE_SIZE, &iInfoCmd2, info2.buffer, &info2.size), "GCGetPortURLInfo");
+
+		Buffer read_port_buffer(read_as<uint64_t>(info2));
+		elog(GCReadPort(port, addres, read_port_buffer.buffer, &read_port_buffer.size), "GCReadPort");
+		//print_as<char>(read_port_buffer); //вывод XML
+
+		return GENICAM_NAMESPACE::gcstring((char*)read_port_buffer.buffer);
+	}
 };
