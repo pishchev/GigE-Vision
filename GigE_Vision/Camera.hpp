@@ -30,8 +30,8 @@ public:
 			std::cout << "AcquisitionStart:" << ptrAcquisitionStart->IsDone() << std::endl;
 		}
 	}
-
-	void SetWidthMin()
+	
+	int SetWidthMin()
 	{
 		CIntegerPtr ptrWidth = cam._GetNode("Width");
 		if (IsWritable(ptrWidth))
@@ -39,8 +39,9 @@ public:
 			*ptrWidth = ptrWidth->GetMin();
 			std::cout << "Width: "<< ptrWidth->GetValue() <<std::endl;
 		}
+		return ptrWidth->GetValue();
 	}
-	void SetHeightMin()
+	int SetHeightMin()
 	{
 		CIntegerPtr ptrHeight = cam._GetNode("Height");
 		if (IsWritable(ptrHeight))
@@ -48,7 +49,30 @@ public:
 			*ptrHeight = ptrHeight->GetMin();
 			std::cout << "Height: " << ptrHeight->GetValue() << std::endl;
 		}
+		return ptrHeight->GetValue();
 	}
+
+	int SetHeight(size_t h)
+	{
+		CIntegerPtr ptrHeight = cam._GetNode("Height");
+		if (IsWritable(ptrHeight))
+		{
+			*ptrHeight = h;
+			std::cout << "Height: " << ptrHeight->GetValue() << std::endl;
+		}
+		return ptrHeight->GetValue();
+	}
+	int SetWidth(size_t w)
+	{
+		CIntegerPtr ptrWidth = cam._GetNode("Width");
+		if (IsWritable(ptrWidth))
+		{
+			*ptrWidth = w;
+			std::cout << "Width: " << ptrWidth->GetValue() << std::endl;
+		}
+		return ptrWidth->GetValue();
+	}
+
 
 	int64_t PayloadSize()
 	{

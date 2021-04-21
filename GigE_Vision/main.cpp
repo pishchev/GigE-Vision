@@ -1,4 +1,6 @@
 #include <iostream>
+#include <fstream>
+
 #include <assert.h>
 
 #include <windows.h> 
@@ -38,15 +40,15 @@ void Introduce_Lib()
 
 void ArqFunction(GenTL::EVENT_HANDLE hEvent)
 {
-	Buffer data_buffer(16);
+	Buffer data_buffer(64);
 	while (true)
 	{
 		auto err = EventGetData(hEvent, data_buffer.buffer, &data_buffer.size, 10000);
 		if (err == 0)
 		{
 			std::cout << "DataSize: " << data_buffer.size<<std::endl;
-			std::cout << "Data: "; print_as<uint32_t>(data_buffer);
-			data_buffer = Buffer(16);
+			std::cout << "Data: "<< std::hex << read_as<int64_t>(data_buffer)<<std::endl;
+			data_buffer = Buffer(64);
 		}
 		else if (err != GenTL::GC_ERR_TIMEOUT)
 		{
@@ -87,8 +89,8 @@ int main()
 	Camera camera;
 	camera.LoadXML(Port::GetXML(dev_handler.GetPort()));
 	camera.Connect((IPort*)&p);
-	camera.SetWidthMin();
-	camera.SetHeightMin();
+	int width = camera.SetWidth(640);
+	int height = camera.SetHeight(640);
 
 	auto payloadSize = camera.PayloadSize();
 
@@ -98,15 +100,9 @@ int main()
 	//-----------------------Buffer preparing--------------------------------------
 
 	int type = GenTL::INFO_DATATYPE_STRING;
-	std::vector<Buffer> buf_reserv = { Buffer(payloadSize),Buffer(payloadSize) ,Buffer(payloadSize) ,Buffer(payloadSize) ,Buffer(payloadSize) };
+	
+	std::vector<GenTL::BUFFER_HANDLE> ds_buffers = { nullptr ,nullptr ,nullptr ,nullptr ,nullptr ,nullptr };
 
-	std::vector<GenTL::BUFFER_HANDLE> ds_buffers = { nullptr ,nullptr ,nullptr ,nullptr ,nullptr};
-
-	/*for (int i = 0; i < ds_buffers.size(); ++i)
-	{
-		elog(DSAnnounceBuffer(hDS, buf_reserv[i].buffer, buf_reserv[i].size,  nullptr, &ds_buffers[i]), "DSAllocAndAnnounceBuffer");
-	}*/
-	// or
 	for (auto it = ds_buffers.begin(); it != ds_buffers.end(); ++it)
 	{
 		elog(DSAllocAndAnnounceBuffer(hDS, payloadSize, nullptr, &(*it)), "DSAllocAndAnnounceBuffer");
@@ -128,26 +124,88 @@ int main()
 	GenTL::EVENT_HANDLE hEvent = nullptr;
 	elog(GCRegisterEvent(hDS, GenTL::EVENT_NEW_BUFFER, &hEvent), "GCRegisterEvent");
 
-	std::thread thr(ArqFunction, hEvent);
-	thr.detach();
+	//std::thread thr(ArqFunction, hEvent);
+	//thr.detach();
 
-	//----------------------Chunks------------------------------------------------------------
+	//--------------------------------------------------------------------------------------
 
-	//Buffer buffer_payload(100);
-	//while (true)
-	//{
-	//	for (auto it = ds_buffers.begin(); it != ds_buffers.end(); ++it)
-	//	{		
-	//		elog(DSGetBufferInfo(hDS, *it, GenTL::BUFFER_INFO_PAYLOADTYPE, &type, buffer_payload.buffer, &buffer_payload.size) ,"DSGetBufferInfo");
-	//		print_as<size_t>(buffer_payload);// == GenTL::PAYLOAD_TYPE_CHUNK_DATA)
-	//		buffer_payload = Buffer(100);
-	//		/*{
-	//			buffer_payload = Buffer(100);
-	//			std::cout << "!";
-	//		}*/
-	//	}
-	//}
+	Buffer data_buffer(64);
 
+	while (true)
+	{
+		auto err = EventGetData(hEvent, data_buffer.buffer, &data_buffer.size, 10000);
+		if (err == 0)
+		{
+			//std::cout << "Adress: " << read_as<int64_t>(data_buffer) << std::endl;
+
+			for (auto it = ds_buffers.begin(); it != ds_buffers.end(); ++it)
+			{
+				if (read_as<int64_t>(data_buffer) == (int64_t)(*it))
+				{
+					/*{Buffer buffer_info(20);
+					DSGetBufferInfo(hDS, *it, GenTL::BUFFER_INFO_SIZE, &type, buffer_info.buffer, &buffer_info.size);
+					std::cout << "Size:   "; print_as<size_t>(buffer_info);}
+
+					{Buffer buffer_info(20);
+					DSGetBufferInfo(hDS, *it, GenTL::BUFFER_INFO_DATA_LARGER_THAN_BUFFER, &type, buffer_info.buffer, &buffer_info.size);
+					std::cout << "Data larger than buffer: "; print_as<bool8_t>(buffer_info);}
+
+					{Buffer buffer_info(20);
+					DSGetBufferInfo(hDS, *it, GenTL::BUFFER_INFO_DATA_SIZE, &type, buffer_info.buffer, &buffer_info.size);
+					std::cout << "Data size: "; print_as<size_t>(buffer_info); }
+
+					{Buffer buffer_info(20);
+					DSGetBufferInfo(hDS, *it, GenTL::BUFFER_INFO_DATA_LARGER_THAN_BUFFER, &type, buffer_info.buffer, &buffer_info.size);
+					std::cout << "Data larger than buffer: "; print_as<bool8_t>(buffer_info);}*/
+					/*{Buffer buffer_info(20);
+					DSGetBufferInfo(hDS, *it, GenTL::BUFFER_INFO_XPADDING, &type, buffer_info.buffer, &buffer_info.size);
+					std::cout << "XPadding: "; print_as<size_t>(buffer_info); }
+
+					{Buffer buffer_info(20);
+					DSGetBufferInfo(hDS, *it, GenTL::BUFFER_INFO_YPADDING, &type, buffer_info.buffer, &buffer_info.size);
+					std::cout << "YPadding: "; print_as<size_t>(buffer_info); }
+
+					{Buffer buffer_info(20);
+					DSGetBufferInfo(hDS, *it, GenTL::BUFFER_INFO_XOFFSET, &type, buffer_info.buffer, &buffer_info.size);
+					std::cout << "XOffset: "; print_as<size_t>(buffer_info); }
+
+					{Buffer buffer_info(20);
+					DSGetBufferInfo(hDS, *it, GenTL::BUFFER_INFO_YOFFSET, &type, buffer_info.buffer, &buffer_info.size);
+					std::cout << "YOffset: "; print_as<size_t>(buffer_info); }*/
+
+					Buffer buffer_info(20);
+					DSGetBufferInfo(hDS, *it, GenTL::BUFFER_INFO_BASE, &type, buffer_info.buffer, &buffer_info.size);
+					//std::cout << "Base:   "; print_as<size_t>(buffer_info); 					
+
+					unsigned char* buf = nullptr;
+					buf = read_as<unsigned char*>(buffer_info);
+
+					{
+						std::ofstream fstream;
+						fstream.open("D:\\source\\repos\\Python\\pictures\\mono8_640_640.txt");
+
+						fstream << (int)buf[0];
+						for (int i = 1; i < payloadSize; i++)
+						{
+							fstream <<' '<< (int)buf[i];
+						}
+
+						system("pause");
+						exit(1);
+					}
+					
+
+					//elog(DSQueueBuffer(hDS, *it), "DSQueueBuffer");
+				}
+			}
+
+			data_buffer = Buffer(64);
+		}
+		else if (err != GenTL::GC_ERR_TIMEOUT)
+		{
+			elog(err, "ArqFunction");
+		}
+	}
 
 	system("pause");
 	return 0;
