@@ -1,6 +1,7 @@
 #pragma once
 #include <typeinfo>
 
+
 class Buffer
 {
 public:
@@ -8,6 +9,37 @@ public:
 	{
 		buffer = new char[size];
 	}
+
+	Buffer& operator=(const Buffer& b)
+	{
+		delete[] buffer;
+
+		size = b.size;
+		buffer = new char[size];
+
+		for (int i = 0; i < size; i++)
+		{
+			*((char*)buffer + i) = *((char*)b.buffer + i);
+		}
+
+		return *this;
+	}
+
+	Buffer& operator=(Buffer& b)
+	{
+		delete[] buffer;
+
+		size = b.size;
+		buffer = new char[size];
+
+		for (int i = 0; i < size; i++)
+		{
+			*((char*)buffer + i) = *((char*)b.buffer + i);
+		}
+
+		return *this;
+	}
+
 	~Buffer()
 	{
 		delete[] buffer;

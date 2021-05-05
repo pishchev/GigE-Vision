@@ -8,6 +8,7 @@
 #include <vector>
 #include <thread>
 #include <queue>
+#include <memory>
 
 #include "Buffer.hpp"
 #include "Logger.hpp"
@@ -63,6 +64,8 @@ public:
 
 	void acquirerPreparing()
 	{
+		image = new int[payloadSize];
+
 		imageAcq.AnnounceBuffers(hDS, payloadSize);
 		imageAcq.StartAcquisition(hDS);
 		ds_buffers = imageAcq.GetBuffers();
@@ -72,31 +75,32 @@ public:
 	{
 		camera.StartAcquisition();
 		elog(GCRegisterEvent(hDS, GenTL::EVENT_NEW_BUFFER, &hEvent), "GCRegisterEvent");
+		asyncAcquisition();
 	}
 
-	void getImage()
+	void getImageFull()
 	{
 		while (true)
 		{
-			auto err = EventGetData(hEvent, data_buffer.buffer, &data_buffer.size, 10000);
+			auto err = EventGetData(hEvent, data_buffer1.buffer, &data_buffer1.size, 10000);
 			if (err == 0)
 			{
 				Buffer buffer_info(20);
-				DSGetBufferInfo(hDS, read_as<void*>(data_buffer), GenTL::BUFFER_INFO_BASE, &type, buffer_info.buffer, &buffer_info.size);
+				DSGetBufferInfo(hDS, read_as<void*>(data_buffer1), GenTL::BUFFER_INFO_BASE, &type, buffer_info.buffer, &buffer_info.size);
 
 				unsigned char* buf = nullptr;
 				buf = read_as<unsigned char*>(buffer_info);
 
-				std::cout << std::endl << read_as<int64_t>(data_buffer) << " is ready!" << std::endl;
+				//std::cout << std::endl << read_as<int64_t>(data_buffer1) << " is ready!" << std::endl;
 
 				for (int i = 0; i < payloadSize; i++)
 				{
-					std::cout << ' ' << (int)buf[i];
+					image[i] = (int)buf[i];
+					//std::cout << image[i];
 				}
 
-				elog(DSQueueBuffer(hDS, read_as<GenTL::BUFFER_HANDLE>(data_buffer)), "DSQueueBuffer");
+				elog(DSQueueBuffer(hDS, read_as<GenTL::BUFFER_HANDLE>(data_buffer1)), "DSQueueBuffer");
 
-				data_buffer = Buffer(64);
 			}
 			else if (err != GenTL::GC_ERR_TIMEOUT)
 			{
@@ -105,7 +109,69 @@ public:
 		}
 	}
 
+	size_t imageSize()
+	{
+		return payloadSize;
+	}
+	
+
+	bool getImage(int* buffer , size_t size)
+	{
+		if (payloadSize > size && is_ready)return false;
+
+		memcpy(buffer, image, sizeof(int) * size);
+
+		return true;
+	}
+
+	void timer()
+	{
+		next = true;
+	}
+
 private:
+
+	void asyncAcquisition()
+	{
+		std::thread thr(asyncCapture, std::ref(*this));
+		thr.detach();
+	}
+
+	static void asyncCapture(GigeManager& manager)
+	{
+		while (true)
+		{
+			if (!manager.next) continue;
+
+			Buffer data_buffer1(64);
+			auto err = EventGetData(manager.hEvent, data_buffer1.buffer, &data_buffer1.size, 10000);
+			if (err == 0)
+			{
+				Buffer buffer_info(20);
+				DSGetBufferInfo(manager.hDS, read_as<void*>(data_buffer1), GenTL::BUFFER_INFO_BASE, &manager.type, buffer_info.buffer, &buffer_info.size);
+
+				unsigned char* buf = nullptr;
+				buf = read_as<unsigned char*>(buffer_info);
+
+				//std::cout << std::endl << read_as<int64_t>(data_buffer1) << " is ready!" << std::endl;
+
+				for (int i = 0; i < manager.payloadSize; i++)
+				{
+					manager.image[i] = (int)buf[i];
+				}
+				manager.is_ready = true;
+
+				elog(DSQueueBuffer(manager.hDS, read_as<GenTL::BUFFER_HANDLE>(data_buffer1)), "DSQueueBuffer");
+
+				manager.next = false;
+
+			}
+			else if (err != GenTL::GC_ERR_TIMEOUT)
+			{
+				elog(err, "ArqFunction");
+			}
+		}
+	}
 
 	TransportLayer tl_handler;
 	Interface if_handler;
@@ -115,7 +181,12 @@ private:
 	ImageAcquirer imageAcq;
 
 	std::vector<GenTL::BUFFER_HANDLE> ds_buffers;
-	std::queue<GenTL::BUFFER_HANDLE>ready_buffers{};
+
+	bool next = false;
+	bool is_ready = false;
+	int* image = nullptr;
+
+	Buffer data_buffer1{64};
 
 	Buffer data_buffer{64};
 
