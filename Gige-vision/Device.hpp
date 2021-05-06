@@ -9,6 +9,12 @@ public:
 
 	Device(GenTL::DEV_HANDLE hDevice) : hDevice(hDevice) {}
 
+	Device() {}
+
+	void setDevice(GenTL::DEV_HANDLE dev)
+	{
+		hDevice = dev;
+	}
 
 	uint32_t GetNumStreams()
 	{

@@ -27,7 +27,6 @@ public:
 		if (IsWritable(ptrAcquisitionStart))
 		{
 			ptrAcquisitionStart->Execute();
-			std::cout << "AcquisitionStart:" << ptrAcquisitionStart->IsDone() << std::endl;
 		}
 	}
 	
@@ -37,7 +36,6 @@ public:
 		if (IsWritable(ptrWidth))
 		{
 			*ptrWidth = ptrWidth->GetMin();
-			std::cout << "Width: "<< ptrWidth->GetValue() <<std::endl;
 		}
 		return ptrWidth->GetValue();
 	}
@@ -47,7 +45,6 @@ public:
 		if (IsWritable(ptrHeight))
 		{
 			*ptrHeight = ptrHeight->GetMin();
-			std::cout << "Height: " << ptrHeight->GetValue() << std::endl;
 		}
 		return ptrHeight->GetValue();
 	}
@@ -58,7 +55,6 @@ public:
 		if (IsWritable(ptrHeight))
 		{
 			*ptrHeight = h;
-			std::cout << "Height: " << ptrHeight->GetValue() << std::endl;
 		}
 		return ptrHeight->GetValue();
 	}
@@ -68,7 +64,6 @@ public:
 		if (IsWritable(ptrWidth))
 		{
 			*ptrWidth = w;
-			std::cout << "Width: " << ptrWidth->GetValue() << std::endl;
 		}
 		return ptrWidth->GetValue();
 	}

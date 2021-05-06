@@ -13,6 +13,13 @@ public:
 		elog(err, "TL_Handler::Open");
 	}
 
+	~TransportLayer()
+	{
+		std::cout << "!!!";
+		auto err = TLClose(hTL);
+		elog(err, "TL_Handler::Close");
+	}
+
 	void UpdateInterfaceList()
 	{
 		bool8_t pbChanged = false;

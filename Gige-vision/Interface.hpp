@@ -8,6 +8,13 @@ class Interface
 public:
 	Interface(GenTL::IF_HANDLE hIF) : hIF(hIF) {}
 
+	Interface(){}
+
+	void setInterfaces(GenTL::IF_HANDLE itf)
+	{
+		hIF = itf;
+	}
+
 	void UpdateDeviceList()
 	{
 		bool8_t pbChanged = false;
