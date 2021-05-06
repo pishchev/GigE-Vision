@@ -24,7 +24,7 @@ class CBall
 {
 public:
 
-    CBall(int iImageWidth = 320, int iImageHeight = 240, int iBallSize = 10);
+    CBall(int iImageWidth = 640, int iImageHeight = 640, int iBallSize = 10);
 
     // Plots the square ball in the image buffer, at the current location.
     // Use BallPixel[] as pixel value for the ball.

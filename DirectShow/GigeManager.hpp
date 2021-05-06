@@ -52,12 +52,12 @@ public:
 		p.UsePort(dev_handler.GetPort());
 	}
 
-	void cameraInit()
+	void cameraInit(int width = 640 , int heigth=640)
 	{
 		camera.LoadXML(Port::GetXML(dev_handler.GetPort()));
 		camera.Connect((IPort*)&p);
-		camera.SetWidth(640);
-		camera.SetHeight(640);
+		camera.SetWidth(width);
+		camera.SetHeight(heigth);
 
 		payloadSize = camera.PayloadSize();
 	}

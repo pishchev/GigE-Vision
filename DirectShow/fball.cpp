@@ -158,8 +158,8 @@ CBallStream::CBallStream(HRESULT *phr,
                          CBouncingBall *pParent,
                          LPCWSTR pPinName) :
     CSourceStream(NAME("Bouncing Ball"),phr, pParent, pPinName),
-    m_iImageWidth(640),
-    m_iImageHeight(640),
+    m_iImageWidth(1024),
+    m_iImageHeight(1024),
     m_iDefaultRepeatTime(20)
 {
     ASSERT(phr);
@@ -168,7 +168,7 @@ CBallStream::CBallStream(HRESULT *phr,
     gige.Init("D:\\source\\repos\\C++\\directshow\\filters\\ball2\\TLSimu.cti");
     gige.useInterface(0);
     gige.useDevice(1);
-    gige.cameraInit();
+    gige.cameraInit(m_iImageWidth, m_iImageHeight);
     gige.acquirerPreparing();
     gige.startAcquisition();
     gige.timer();
@@ -233,7 +233,6 @@ HRESULT CBallStream::FillBuffer(IMediaSample *pms)
                 {  
                     if(i < 3)
                     {
-                        //if (im_f)
                         *pData = *imagec; 
                         imagec++;
                     }
